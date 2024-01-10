@@ -1,0 +1,114 @@
+---
+title: "GA9"
+author: "Young Kim"
+date: "2023-11-21"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(neuralnet)
+library(caret)
+library(nnet)
+
+df <- read.csv("C:/Users/YS Yoon/OneDrive - Washington University in St. Louis/23 Fall Semester/3. [DAT 500S W 1000 S24] Machine Learning/Module9 Neural Network/Lecture/ToyotaCorolla.csv")
+
+#Selecting the relevant features and target
+var <- c("Age_08_04", "KM", "Fuel_Type", "HP", "Automatic" ,"Doors", "Quarterly_Tax" ,"Mfr_Guarantee", "Guarantee_Period", "Airco", "Automatic_airco", "CD_Player", "Powered_Windows", "Sport_Model", "Tow_Bar")
+  
+
+df <- df[,c('Price',var)]
+
+# check variable types
+str(df)
+# Categorical: Fuel_Type(Coverting), Automatic, Mft_Guarantee, Airco, Automatic_airco, CD_Player, Powered_windows, Sport_Model, Tow_Bar
+# Numerical: Age_08_04, KM, HP, Doors, Quarterly_Tax, Guarantee_Period
+# Response: Price
+
+```
+
+```{r}
+## record teh range & values of 'Price'
+## to transfer it back to original range
+price = df[,'Price']
+max_price = max(df$Price)
+min_price = min(df$Price)
+```
+
+
+```{r}
+# Use preProcess() from the caret package to normalize numerical variables
+# Age_08_04, KM, HP, Quarterly_Tax, Guarangee_Period, Doors
+numerical = c('Age_08_04', 'KM', 'HP', 'Price', 'Quarterly_Tax' , 'Guarantee_Period', 'Doors')
+norm.values = preProcess(df[,numerical], method='range')
+df[,numerical] = predict(norm.values, df[,numerical])
+```
+
+```{r}
+# Convert categorical predictor (Fuel_type) to dummies
+## get class names
+fuel_types = colnames(class.ind(df$Fuel_Type))
+
+## add dummies to dataframe
+df = cbind(df, class.ind(df$Fuel_Type))
+
+## rename columns
+names(df)=c('Price', var, paste("Fuel_Type_", fuel_types, sep=""))
+
+## drop original columns
+df = subset(df, select = -c(Fuel_Type))
+```
+
+```{r}
+# partition the data
+set.seed(123)
+train = sample(nrow(df),nrow(df)*0.7)
+
+# Fit a neural network using a single hidden layer with 2 nodes
+f = as.formula(paste('Price~',
+                     paste(names(df)[!names(df) %in% c('Price')],
+                           collapse='+')))
+nn = neuralnet(f, data = df[train,], hidden = 2)
+```
+
+
+```{r}
+# function to get rmse
+compute_rmse <- function(nn, df, train, price){
+  # make prediction
+  # train
+  pred.train = compute(nn, subset(df[train,], select=-c(Price)))
+  ## transfer predicted value back to original range
+  ## through multiplying the rescaled number by range (max_price-min_price)
+  ## & adding min_price
+  pred.train.orig = pred.train$net.result*(max_price-min_price)+min_price
+  ## compute rmse
+  train.rmse = sqrt(mean((price[train]-pred.train.orig)^2))
+  # test
+  pred.test = compute(nn, subset(df[-train], select=-c(Price)))
+  ## transfer range & compute rmse
+  pred.test.orig = pred.test$net.result*(max_price-min_price)+min_price
+  test.rmse = sqrt(mean(price[-train]-pred.test.orig)^2)
+  
+  # return rmse
+  rmse = as.data.frame(rbind(train.rmse, test.rmse))
+  return(rmse)
+}
+```
+
+```{r}
+# change the number of hidden layers and nodes
+
+## single layer with 5 nodes
+nn1 = neuralnet(f, data = df[train,], hidden=5)
+rmse1 = compute_rmse(nn1,df,train,price)
+
+## two layers, 5 nodes in each layer
+nn2 = neuralnet(f, data = df[train,], hidden=c(5,5))
+rmse2 = compute_rmse(nn2,df,train,price)
+
+```
+
