@@ -1,0 +1,96 @@
+---
+title: "Group Assignment 8"
+author: "Young Kim"
+date: "2023-11-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Bagging 1
+```{r}
+library(ISLR)
+
+set.seed(1)
+
+names(OJ)
+
+fix(OJ)
+
+train = sample(1:nrow(OJ),nrow(OJ)/2)
+
+OJ.test=OJ[-train,]
+
+Purchase.test = OJ[-train,"Purchase"]
+```
+
+bagging 2
+```{r}
+library(randomForest)
+
+set.seed(1)
+
+bag.OJ = randomForest(Purchase~., data=OJ, subset=train, mtry=17, importance=TRUE)
+#<argument> mtry=17:we want to use all 17 predictors in the dataset as candidates for every branching decision.subset=train: we want to use only the rows of train dataset.importance=TRUE: to calculate the variable importance scores.
+
+bag.OJ
+# the number of trees: 500
+# The out-of-bag MSE is 21.12%
+# Confusion matrix 
+```
+Random Forest
+```{r}
+library(randomForest)
+
+set.seed(1)
+
+rf.OJ = randomForest(Purchase ~ .,data = OJ, subset=train, mtry=6,importance = TRUE)
+
+rf.OJ
+
+yhat.rf = predict(rf.OJ, newdata = OJ[-train,])
+
+plot(yhat.rf,OJ.test)
+
+importance(rf.OJ)
+```
+
+Boosting
+```{r}
+library(gbm)
+
+set.seed(1)
+
+boost.OJ = gbm(Purchase~.,OJ[-train,],distribution = "gaussian", n.trees=5000,interaction.depth=6, shrinkage = 0.04)
+
+summary(boost.OJ)
+
+boost.probs = predict(boost.OJ, newdata = OJ.test, ntrees = 5000 )
+
+boost.pred = ifelse(boost.probs >0.5, 1, 0)
+
+table(OJ.test$Purchase,boost.pred)
+```
+
+
+Logistic Regression
+```{r}
+glm.OJ = glm(Purchase~.-Purchase, data = OJ, family = binomial, subset = train)
+
+glm.probs = predict(glm.OJ,OJ.test,type = "response")
+
+glm.pred = rep("CH",535)
+
+glm.pred[glm.probs>.5]="MM"
+
+table(glm.pred,Purchase.test)
+#(286+151) / 535 = 81.68%
+
+mean(glm.pred == Purchase.test) # the accuracy rate: 81.68%
+
+mean(glm.pred != Purchase.test) # the inaccuracy rate: 18.31%
+```
+
+
