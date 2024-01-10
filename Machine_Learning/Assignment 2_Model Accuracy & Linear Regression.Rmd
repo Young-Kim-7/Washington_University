@@ -1,0 +1,88 @@
+---
+title: "Group Assignment 2"
+output:
+  pdf_document: default
+  html_document: default
+date: "2023-09-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+library(ISLR)
+attach(Auto)
+```
+
+
+(a) Produce a scatterplot matrix which includes all of the variables in the data set.
+```{r}
+pairs(Auto)
+```
+
+#b) Compute the matrix of correlations between the variables using the function cor(). You will need to exclude the name variable, which is qualitative.
+
+```{r}
+# exclude the name variabl, which is qualitative
+round(cor(Auto[1:8]), digit=3)
+```
+
+#c) Use the lm() function to perform a multiple linear regression with mpg as the response and all other variables except name as the predictors. Use the summary() function to print the results.
+```{r}
+Auto$origin = factor(Auto$origin)
+lm1=lm(mpg~.-name, data= Auto)
+summary(lm1)
+```
+i) Is there a relationship between the predictors and the response?
+    answer) Yes. R square is about 0.8, which suggests there is a strong relationship between the parameters and the response variable.
+
+ii) Which predictors appear to have a statistically significant relationship to the response?
+    answer) some predictors like displacement, weight, year, and origin appear to have a statistically significant relationship to the response because p-values of these are below the significance level.
+
+iii) What does the coefficient for the year variable suggest?
+    answer) It suggests that the year variable has a positive correlation with the mpg variable. IF the year predictor increases by 1 unit, the mpg response goes up by around 0.77 unit. 
+
+(d) Use the plot() function to produce diagnostic plots of the linear regression fit. Comment on any problems you see with the fit. Do the residual plots suggest any unusually large outliers? Does the leverage plot identify any observations with unusually high leverage?
+```{r}
+## Method1: divide plotting region into 2*2
+par(mfrow=c(2,2)) 
+
+plot(lm1)
+
+#Method2: normal qq plot, residual plot
+qqnorm(lm1$residuals)
+
+plot(Auto[,1], lm1$residuals, xlab="MPG", ylab="Regression residual", main="Residual plot")
+
+```
+answer) The residual plot shows that there is a U-shape pattern in the residuals which might indicate that the data is non-linear. Observations 323, 326, and 327 are the potential outliers because they are far away from the predicted regression line. Moreover, according to the Residuals vs, Leverage graph, observation 14 is a high leverage point because it is on the right side of the horizontal axis.
+
+
+(e) Use the * and : symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically significant?
+```{r}
+lm2=lm(mpg~.-name + displacement*horsepower + horsepower*year, data=Auto)
+summary(lm2)
+
+lm3=lm(mpg~.-name + displacement:horsepower + horsepower:year, data=Auto)
+summary(lm3)
+```
+Answer) Yes. All the interactions are statistically significant.
+
+(f) Try a few different transformations of the variables, such as log(X), √X, X2. Comment on your findings.
+```{r}
+# Example
+autoLinearModel = lm(mpg~.-name + I(weight^2) + I(displacement^2), data=Auto)
+summary(autoLinearModel)
+
+# my output
+summary(lm(mpg~weight, data=Auto)) # a normal linear regression
+
+summary(lm(mpg~log(weight),data=Auto))##log transformation
+
+summary(lm(mpg~sqrt(weight),data=Auto))##square root
+
+summary(lm(mpg~poly(weight,2))) ##UPTO second degree
+
+```
+Answer) When we use some transformations of variables, we can get more statistically significant relation in a linear regression model.
