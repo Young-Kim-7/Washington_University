@@ -1,0 +1,165 @@
+---
+title: "Group Assignment4 (YK)"
+output: pdf_document
+date: "2023-09-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exercise 4.7: Problem 11 (part e)
+11. In this problem, you will develop a model to predict whether a given car gets high or low gas mileage based on the Autodata set.
+
+for context: (b) Explore the data graphically in order to investigate the association between mpg01 and the other features. Which of the other features seem most likely to be useful in predicting mpg01? Scatter plots and boxplots may be useful tools to answer this question. Describe your findings.
+```{r}
+library(ISLR)
+
+library(dplyr)
+
+attach(Auto)
+
+#Solution 1
+Auto_new <- Auto %>% mutate(mpg01 = ifelse(Auto$mpg > median(Auto$mpg),1,0))
+
+# Solution 2
+mpg01<-ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
+Auto_new<-data.frame(cbind(mpg01,Auto))
+
+str(Auto_new)
+
+pairs(Auto_new[, names(Auto_new) !="name"])
+# scatterplot: displacement, horsepower, weight, acceleration
+
+# Set random Seed
+set.seed(100)
+
+# Split train & test
+train = sample(nrow(Auto_new), nrow(Auto_new)/2, replace=FALSE)
+data_train = Auto_new[train,]
+data_test = Auto_new[-train,]
+```
+```{r}
+cor(Auto_new[, names(Auto_new) !="name"])
+```
+
+
+(e) Perform QDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+```{r}
+library(MASS)
+
+qda_fit = qda(mpg01~log(weight)+log(displacement)+year, data = data_train)
+
+qda_pred = predict(qda_fit,data_test)
+
+qda_class = qda_pred$class
+
+table_qda = table(qda_class, data_test$mpg01)
+
+1 - mean(qda_class==data_test$mpg01)
+# test error rate: 0.077
+```
+
+
+Exercise 5.4: Problem 5
+5. In Chapter 4, we used logistic regression to predict the probability of default using income and balance on the Default data set. We will now estimate the test error of this logistic regression model using the validation set approach. Do not forget to set a random seed before beginning your analysis.
+
+(a) Fit a logistic regression model that uses income and balance to predict default.
+```{r}
+fix(Default)
+
+glm.fit = glm(default~income+balance, data=Default, family=binomial)
+```
+
+(b) Using the validation set approach, estimate the test error of this model. In order to do this, you must perform the following steps:
+i. Split the sample set into a training set and a validation set.
+```{r}
+set.seed(50)
+train = sample(nrow(Default), nrow(Default)*.5, replace =F)
+train.data = Default[train,]
+test.data = Default[-train,]
+```
+
+
+ii. Fit a multiple logistic regression model using only the train-ing observations.
+```{r}
+glm.fit.first <- glm(default~income+balance, data = train.data, family = binomial)
+summary(glm.fit.first)
+```
+iii. Obtain a prediction of default status for each individual in the validation set by computing the posterior probability of default for that individual, and classifying the individual to the default category if the posterior probability is greater than 0.5.
+```{r}
+glm.prob.first = predict(glm.fit.first, test.data, type ="response")
+glm.predict.first = ifelse(glm.prob.first>.5, "Yes", "No")
+```
+
+iv. Compute the validation set error, which is the fraction of the observations in the validation set that are misclassified.
+```{r}
+validation_error <- mean(glm.predict.first != test.data$default)
+validation_error
+```
+
+
+(c) Repeat the process in (b) three times, using three different splits of the observations into a training set and a validation set. Comment on the results obtained.
+```{r}
+set.seed(60)
+train = sample(nrow(Default), nrow(Default)*.6, replace =F)
+train.data = Default[train,]
+test.data = Default[-train,]
+
+glm.fit.sec <- glm(default~income+balance, data = train.data, family = binomial)
+summary(glm.fit.sec)
+
+glm.prob.sec = predict(glm.fit.sec, test.data, type ="response")
+glm.predict.sec = ifelse(glm.prob.sec>.5, "Yes", "No")
+
+validation_error <- mean(glm.predict.sec != test.data$default)
+validation_error
+```
+
+```{r}
+set.seed(70)
+train = sample(nrow(Default), nrow(Default)*.7, replace =F)
+train.data = Default[train,]
+test.data = Default[-train,]
+
+glm.fit.third <- glm(default~income+balance, data = train.data, family = binomial)
+summary(glm.fit.third)
+
+glm.prob.third = predict(glm.fit.third, test.data, type ="response")
+glm.predict.third = ifelse(glm.prob.third>.5, "Yes", "No")
+
+validation_error <- mean(glm.predict.third != test.data$default)
+validation_error
+```
+```{r}
+set.seed(80)
+train = sample(nrow(Default), nrow(Default)*.8, replace =F)
+train.data = Default[train,]
+test.data = Default[-train,]
+
+glm.fit.fourth <- glm(default~income+balance, data = train.data, family = binomial)
+summary(glm.fit.fourth)
+
+glm.prob.fourth = predict(glm.fit.fourth, test.data, type ="response")
+glm.predict.fourth = ifelse(glm.prob.fourth>.5, "Yes", "No")
+
+validation_error <- mean(glm.predict.fourth != test.data$default)
+validation_error
+# Comment: Variability exists in validation rate, because we include different observations in training and test datasets. Thus, the coefficient estimates can also vary.
+```
+
+(d) Now consider a logistic regression model that predicts the probability of default using income, balance, and a dummy variable for student. Estimate the test error for this model using the validation set approach. Comment on whether or not including a dummy variable for student leads to a reduction in the test error rate.
+
+```{r}
+class(Default$student)
+glm.fit.student=glm(default~income+balance+student,data=train.data,family=binomial)
+summary(glm.fit)
+
+glm.prob.student = predict(glm.fit.student, test.data, type ="response")
+glm.predict.student = ifelse(glm.prob.student>.5, "Yes", "No")
+
+validation_error <- mean(glm.predict.student != test.data$default)
+validation_error
+
+# Comment: The error rate does not change drastically for this validation set approach compared to the previous glm model. However, the validation erros of these models can happen by chance. You need to try this with different splits before coming to a conclusion.
+```
