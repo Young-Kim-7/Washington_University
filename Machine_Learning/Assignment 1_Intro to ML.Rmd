@@ -1,0 +1,66 @@
+---
+title: "GA1"
+author: "Young Kim"
+date: "2023-10-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# (a) Which of the predictors are quantitative, and which are qualitative? 
+```{r}
+## Upload Data
+library(ISLR)
+attach(Auto)
+Auto = na.omit(Auto)
+help(Auto)
+names(Auto) 
+fix(Auto)
+View(Auto)
+summary(Auto)
+# Quantitative: 7 predictors
+# Qualitative: name, origin
+```
+
+# (b) What is the range of each quantitative predictor? You can answer this using the range() function. 
+```{r}
+range(Auto$mpg)
+
+sapply(Auto[,-c(8,9)], range)
+
+summary(Auto)
+```
+(c) What is the mean and standard deviation of each quantitative predictor?
+```{r}
+sapply(Auto[,-c(8,9)],mean)
+
+sapply(Auto[,-c(8,9)],sd)
+```
+(d) Now remove the 10th through 85th observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?
+```{r}
+subset = Auto[-c(10:85),-c(8,9)]
+
+sapply(subset,mean)
+
+sapply(subset,sd)
+
+summary(subset)
+```
+(e) Using the full data set, investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots highlighting the relationships among the predictors. Comment on your findings. 
+```{r}
+pairs(Auto)
+
+plot(mpg, horsepower, data=Auto, xlab="mpg", ylab="horsepower", main="MPG ~ horsepower")
+```
+
+(f) Suppose that we wish to predict gas mileage (mpg) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting mpg? Justify your answer. 
+```{r}
+round(cor(Auto[,-9]),digits=3)
+
+lm(mpg~cylinders+displacement+horsepower+weight+acceleration+year+origin,data=Auto)
+# Answer: cylinders, displacemnt, and weight are useful in predicting mpg.
+```
+
+
