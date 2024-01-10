@@ -1,0 +1,160 @@
+---
+title: 'Group Assignment #3'
+Author: 'Young Kim'
+output: html_document
+date: "2023-10-31"
+---
+##
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##
+```{r cars}
+library(ISLR)
+attach(Auto)
+help(Auto)
+names(Auto)
+str(Auto)
+Auto = na.omit(Auto)
+```
+
+## Q11
+In this problem, you will develop a model to predict whether a given car gets high or low gas mileage based on the Auto data set.
+
+a) Create a binary variable, mpg01, that contains a 1 if mpg contains a value above its median, and a 0 if mpg contains a value below its median. You can compute the median using the median() function. Note you may find it helpful to use the data.frame() function to create a single data set containing both mpg01 and the other Auto variables.
+```{r pressure, echo=FALSE}
+# Create the binary variable mpg01
+mpg01<-ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
+
+# Create a new datafrmae
+Auto<-data.frame(cbind(mpg01,Auto))
+```
+
+(b) Explore the data graphically in order to investigate the association between mpg01 and the other features. Which of the other features seem most likely to be useful in predicting mpg01? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings.
+```{r}
+# Overall
+pairs(Auto)
+
+# Boxplot
+boxplot(displacement~mpg01,data=Auto)
+```
+
+
+(c) Split the data into a training set and a test set.
+```{r}
+# Set random Seed
+set.seed(100)
+
+# Split train & test
+train = sample(nrow(Auto), nrow(Auto)/2, replace=FALSE)
+```
+
+(d) Perform LDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+```{r}
+# library(MASS)
+library(MASS)
+
+# Use displacement, weight, year
+lda.fit<-lda(mpg01~weight+displacement+year,data=Auto[train,])
+lda.pred<-predict(lda.fit,Auto[-train,])
+names(lda.pred)
+
+# Test Error (A Frequency table)
+table.lda<-table(lda.pred$class,Auto[-train,]$mpg01)
+mean(lda.pred$class!=Auto[-train,]$mpg01)
+```
+
+(f) Perform logistic regression on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+```{r}
+# Use displacement, weight, year
+glm.fit<-glm(mpg01~weight+displacement+year,data=Auto[train,],family=binomial)
+glm.probs<-predict(glm.fit,Auto[-train,],type="response")
+
+# Set threshold at 0.5, and get test error
+glm.pred=ifelse(glm.probs>.5,1,0)
+table.glm<-table(glm.pred,Auto[-train,]$mpg01)
+mean(glm.pred!=Auto[-train,]$mpg01)
+```
+
+(g) Perform kNN on the training data, with several values of K, in order to predict mpg01. Use only the variables that seemed most associated with mpg01 in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
+```{r}
+# Use displacement, weight, year (column 4,6,8)
+library(class)
+knn.pred<-knn(Auto[train,c(4,6,8)],Auto[-train,c(4,6,8)],Auto[train,]$mpg01,k=1)
+mean(knn.pred!=Auto[-train,]$mpg01)
+```
+
+
+4.7 Exercises; Problem 12
+12. This problem involves writing functions.
+(a) Write a function, Power(), that prints out the result of raising 2 to the 3rd power. In other words, your function should compute 2^3 and print out the results.
+Hint: Recall that x^a raises x to the power a. Use the print() function to output the result.
+```{r}
+Power = function(){
+  print(2^3)
+}
+Power()
+```
+
+(b) Create a new function, Power2(), that allows you to pass any two numbers, x and a, and prints out the value of x^a. You can do this by beginning your function with the line
+#> Power2 =function (x,a){
+#You should be able to call your function by entering, for instance,
+#> Power2 (3,8)
+#on the command line. This should output the value of 3^8, namely, 6,561.
+```{r}
+Power2 = function(x,a){
+  x^a
+}
+
+Power2(3,8)
+```
+
+(c) Using the Power2() function that you just wrote, compute 10^3,8^17, and 131^3.
+```{r}
+Power2(10,3)
+Power2(8,17)
+Power2(131,3)
+```
+
+(d) Now create a new function, Power3(), that actually returns the result x^a as an R object, rather than simply printing it to the screen. That is, if you store the value x^a in an object called result within your function, then you can simply return() this result, using the following line:
+
+return (result )
+
+The line above should be the last line in your function, before the } symbol.
+```{r}
+Power3 = function(x,a){
+  result = x^a
+  return(result)
+}
+
+```
+
+(e) Now using the Power3() function, create a plot of f(x) = x^2. The x-axis should display a range of integers from 1 to 10, and the y-axis should display x2. Label the axes appropriately, and use an appropriate title for the figure. Consider displaying either the x-axis, the y-axis, or both on the log-scale. You can do this by using log=‘‘x’’, log=‘‘y’’, or log=‘‘xy’’ as arguments to the plot() function.
+```{r}
+# Plotting y = x^2
+plot(1:10,Power3(1:10,2),main="y=x^2",xlab="x",ylab="y")
+
+# Plotting y = x^2, with log-scaling
+plot(1:10,Power3(1:10,2),log="x",main='y=x^2, log="x"' ,xlab="x",ylab="y", type="b", col="red")
+
+# Plotting y = x^2, with log-scaling
+plot(1:10,Power3(1:10,2),log="y",main='y=x^2, log="y"' ,xlab="x",ylab="y", type="b", col="blue")
+
+# Plotting y = x^2, with log-scaling
+plot(1:10,Power3(1:10,2),log="xy",main='y=x^2, log="xy"' ,xlab="x",ylab="y", type="b", col="purple")
+```
+
+(f) Create a function, PlotPower(), that allows you to create a plot of x against x^a for a fixed a and for a range of values of x. For instance, if you call
+
+> PlotPower (1:10 ,3)
+
+then a plot should be created with an x-axis taking on values 1, 2, . . . , 10, and a y-axis taking on values 1^3, 2^3, . . . , 10^3.
+```{r}
+PlotPower = function(x,a){
+  plot(x,x^a,main="y=x^a",xlab="x",ylab="y")
+}
+
+PlotPower(1:10,2)
+```
+
