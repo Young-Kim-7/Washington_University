@@ -1,0 +1,81 @@
+---
+title: "Lab5"
+author: "Group5"
+date: "2023-10-04"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exercise 5.4: Problem 2 (part h)
+Problem 2: We will now derive the probability that a given observation is part of a bootstrap sample. Suppose that we obtain a bootstrap sample from a set of n observations.
+
+(g) Create a plot that displays, for each integer value of from 1 to 100,000, the probability that the jth observation is in the bootstrap sample. Comment on what you observe.
+
+```{r}
+x <- 1:100000
+plot(x, 1 - (1 - 1/x)^x)
+# Comment: This plot rapidly goes down to an asymptote at around 0.6
+```
+
+(h) We will now investigate numerically the probability that a bootstrap sample of size n=100
+ contains the jth observation. Here j = 4. We repeatedly create bootstrap samples, and each time we record whether or not the fourth observation is contained in the bootstrap sample.
+
+```{r}
+store=rep(NA, 10000)
+
+for(i in 1:10000) { store[i]=sum(sample (1:100, rep=TRUE)==4) > 0
+
+}
+
+mean(store)
+
+```
+
+
+Comment on the results obtained.
+
+
+Exercise 5.4: Problem 6
+Problem 6: We continue to consider the use of a logistic regression model to predict the probability of default using income and balance on the Default data set. In particular, we will now compute estimates for the standard errors of the income and balance logistic regression coefficients in two different ways:
+
+using the bootstrap, and 
+using the standard formula for computing the standard errors in the glm()function. 
+Do not forget to set a random seed before beginning your analysis.
+(a) Using the summary() and the glm() functions, determine the estimated standard errors for the coefficients associated with income and balance in a multiple logistic regression model that uses both predictors.
+```{r}
+library(ISLR)
+attach(Default)
+```
+
+
+```{r}
+fit.glm <- glm(default ~ income + balance, data = Default, family = "binomial")
+summary(fit.glm)
+```
+
+
+(b) Write a function, boot.fn(), that takes as input the Default data set as well as an index of the observations, and that outputs the coefficient estimates for income and balance in the multiple logistic regression model.
+```{r}
+boot.fn <- function(data, index) {
+    fit <- glm(default ~ income + balance, data = data, family = "binomial", subset = index)
+    return (coef(fit))
+}
+```
+
+(c) Use the boot() function together with your boot.fn()function to estimate the standard errors of the logistic regression coefficients for income and balance.
+```{r}
+library(boot)
+set.seed(1)
+boot(Default, boot.fn, 1000)
+```
+
+(d) Comment on the estimated standard errors obtained using the glm()function and using your bootstrap function.
+```{r}
+# The estimated standard errors obtained by the two methods are close to each other. There is not big difference in coefficients and standard errors.
+```
+
